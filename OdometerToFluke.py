@@ -9,8 +9,9 @@ import os
 tenant = "torcroboticssb.us.accelix.com"
 site = "def"
 
-sandbox_key = os.getenv("sandbox_key")
-production_key = os.getenv("production_key")
+sandbox_key = os.getenv("SANDBOX_KEY")
+production_key = os.getenv("PRODUCTION_KEY")
+motive_key = os.getenv("MOTIVE_KEY")
 
 headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
 
@@ -20,7 +21,7 @@ def getMotiveOdometerValues():
 
     motive_headers = {
         "accept": "application/json", 
-        "X-Api-Key": "9e90504a-82f0-4ed4-b54c-ce37f388f211"
+        "X-Api-Key": motive_key
     }
 
     response = requests.get(odometer_endpoint, headers=motive_headers)
