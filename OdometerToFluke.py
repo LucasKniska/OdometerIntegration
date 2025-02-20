@@ -1,23 +1,31 @@
+# TODO - Documentation, Get rid of tqdm
+
 # Get all the vehicle location information
 import json
 import requests
 import pandas as pd
 from tqdm import tqdm
 import os
+from datetime import datetime
+import math
 
 # config
 tenant = "torcroboticssb.us.accelix.com"
 site = "def"
 
 sandbox_key = os.getenv("SANDBOX_KEY")
-production_key = os.getenv("PRODUCTION_KEY")
+# production_key = os.getenv("PRODUCTION_KEY")
 motive_key = os.getenv("MOTIVE_KEY")
+
+# For testing
+sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
+motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
+
 
 headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
 
 def getMotiveOdometerValues():
-    # Getting odometer values from motive
-    odometer_endpoint = "https://api.gomotive.com/v2/vehicle_locations"
+    odometer_endpoint = f"https://api.gomotive.com/v2/vehicle_locations?page_no=1"
 
     motive_headers = {
         "accept": "application/json", 
@@ -26,16 +34,36 @@ def getMotiveOdometerValues():
 
     response = requests.get(odometer_endpoint, headers=motive_headers)
 
-    # Process to get the odometer readings for each truck
-    odometer_readings = []
+    pagination = response.json()['pagination']
+    pages = math.ceil(pagination['total']/pagination['per_page'])
 
-    for vehicle in response.json()['vehicles']:
+    def get_odometers(page_no):
+        odometer_endpoint = f"https://api.gomotive.com/v2/vehicle_locations?page_no={page_no}"
+
+        response = requests.get(odometer_endpoint, headers=motive_headers)
+
+        return response.json()
+
+    odometer_vals = get_odometers(1)
+
+    # Starts on one, goes until the last page
+    for i in range(2, pages+1):
+        response2 = get_odometers(i)
+        for vehicle in response2['vehicles']:
+            
+            odometer_vals['vehicles'].append(vehicle)
+
+    # turns data into something digestible
+    odometer_readings = []
+    for vehicle in odometer_vals['vehicles']:
         cursor = vehicle['vehicle']
 
         if(cursor['current_location'] is not None):
             odometer_readings.append([cursor['number'], cursor['current_location']['odometer']])
+        else:
+            print(f"Vehicle {cursor['number']} has no odometer reading")
 
-    return odometer_readings # odometer readings in km
+    return odometer_readings
 
 # Gets all of the truck ids from fluke
 def getAllTruckAssets():
@@ -94,29 +122,33 @@ def getAllTruckAssets():
 
     return getAllTruckIds()
 
-# Inserts all of the odometer values into the truck data
+# Inserts odometer values into fluke data
 def insertOdometerValues(odometer_data, asset_data):
 
     # Match motive truck/value with correct fluke asset
     def km_to_mile(km):
         return round(km * 0.621371, 2)
 
-    # Convert asset list to a dictionary for easy lookup
-    asset_dict = {asset['c_description'].split(' - ')[0]: asset for asset in asset_data}
     
     # Iterate through the odometer data and match with asset dictionary
     for row in odometer_data:
 
         key = row[0] # The Truck Number
         value = row[1] # The row 
+        
+        assetKey = key.split(' ')[0]  # Extract the first part of the key
+        
+        for asset in asset_data:
+            truckName = asset['c_description']
 
-        asset_key = key.split(' ')[0]  # Extract the first part of the key
-        if asset_key in asset_dict:
-            asset_dict[asset_key]['odometer_value'] = km_to_mile(value)  # Add odometer value
+            if assetKey in truckName:
+                if value != "N/A" and value != None:
+                    asset['odometer_value'] = km_to_mile(value)  # Add odometer value
+                    asset['truck_from_motive'] = assetKey
     
-    return list(asset_dict.values())  # Convert back to a list
+    return list(asset_data)  # Convert back to a list
 
-# Get all related fields from trucks and sorts into what action should take place
+# Get all related fields from trucks
 def getAllMeterInfos(assets: list) -> list[list, list, list]:
 
     freightliner_relatedInfo = []
@@ -124,12 +156,7 @@ def getAllMeterInfos(assets: list) -> list[list, list, list]:
     freightliners_withoutOdometer = []
 
     def getRelatedInfo(asset: dict):
-
         assetId = asset['id']
-
-        # GETTING TRUCK INFORMATION
-        tenant = "torcroboticssb.us.accelix.com"
-        site = "def"
 
         fluke = f"https://{tenant}/api/entities/{site}/Assets/{assetId}?includeRelated=true" # Include related to get odometer field information
 
@@ -140,25 +167,26 @@ def getAllMeterInfos(assets: list) -> list[list, list, list]:
         try: 
             necessary_info = {
                 "id": r['properties']['id'],
-                "description": r['properties']['c_description'],
+                "description": asset['truck_from_motive'],
                 'meterId': r['related']['AssetMeters'][0]['properties']['id'],
                 'odometerValue': asset['odometer_value']
+                
             }
             freightliner_relatedInfo.append(necessary_info)
 
-            # print(r['properties']['c_description'] + ": Ready to go")
+            print(r['properties']['c_description'] + ": Ready to go")
         except Exception as e:
             try:
 
                 necessary_info = {
                     "id": r['properties']['id'],
-                    "description": r['properties']['c_description'],
+                    "description": asset['truck_from_motive'],
                     'odometerValue': asset['odometer_value']
                 }
 
                 freightliners_withoutmeter.append(necessary_info)
 
-                # print(r['properties']['c_description'] + ": No meter")
+                print(r['properties']['c_description'] + ": No meter")
 
             except Exception as err:
 
@@ -169,59 +197,41 @@ def getAllMeterInfos(assets: list) -> list[list, list, list]:
                 
                 freightliners_withoutOdometer.append(necessary_info)
 
-                # print(r['properties']['c_description'] + ": No odometer")
-
-
+                print(r['properties']['c_description'] + ": No odometer")
 
     for asset in assets:
         getRelatedInfo(asset)
 
     return [freightliner_relatedInfo, freightliners_withoutmeter, freightliners_withoutOdometer]
 
-# Updates the trucks odometer values
+# Updates odometer readings througha asset meter readings
 def UpdateOdometerReadings(trucks: list): # Only data from freightliner_info["relatedInfo"] should be passed here
     # EDIT ASSET METER - With Truck ID and Meter ID
     for truck in trucks:
-        fluke = f"https://{tenant}/api/entities/{site}/Assets/{truck['id']}"
-
+        # ADD ASSET METER READING
+        assetMeterReadings = f'https://{tenant}/api/entities/{site}/AssetMeterReadings'
 
         payload = {
-            "occurredOn": "2024-02-16T15:24:00",
             "properties": {
-                "id": truck['id']
+                "date": str(datetime.now()),
+                "assetMeterId": truck['meterId'],
+                "value": truck['odometerValue']
             },
-            "related": {
-                "AssetMeters": [
-                    {
-                        "properties": {
-                            # "assetId": asset,
-                            "id": truck['meterId'],
-                            "currentValue": truck['odometerValue'],
-                            "tempId": 1,
-                        },
-                        "related": {
-                            "AssetMeterReadings": []
-                        },
-                        "deleted": False
-                    }
-                ],
-                "AssetParts": [],
-            },
+            "related": {},
             "deleted": False
         }
 
-        response = requests.put(fluke, headers=headers, data=json.dumps(payload))
+        response = requests.post(url=assetMeterReadings, headers=headers, data=json.dumps(payload))
 
         try: 
             # Check response
             if response.status_code == 200 or response.status_code == 201:
-                pass
-                # print(truck['description'] + ": Odometer edited successfully!")
-                # print(response.json())
+                print(truck['description'] + ": Asset Meter updated successfully!")
+                print(response.json())
             else:
-                print(f"Failed. Status code: {response.status_code}. Truck: {truck['description']}")
-                # print("Error:", response.text)
-                # print(response)
+                print(f"Failed. Status code: {response.status_code}")
+                print("Error:", response.text)
+                print(response)
         except Exception as e:
             pass
 
