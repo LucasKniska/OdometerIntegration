@@ -8,24 +8,32 @@ from datetime import datetime
 import math
 from zoneinfo import ZoneInfo
 
+
+production = False
+
 # config
-tenant = "torcroboticssb.us.accelix.com"
+tenant = "torcrobotics.us.accelix.com" if production else "torcroboticssb.us.accelix.com"
 site = "def"
 
-sandbox_key = os.getenv("SANDBOX_KEY")
-# production_key = os.getenv("PRODUCTION_KEY")
-motive_key = os.getenv("MOTIVE_KEY")
+# Cookie to the sandbox
+sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
+production_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3MiLCJleHAiOjQxMDI0NDQ4MDAsInNpZCI6bnVsbCwiaWlkIjpudWxsfQ.Gh3b3ibvSeYy7YpqDUI9daup86dYjsM_lisS-8ESWDs"
+motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 
-headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
+# sandbox_key = os.getenv("SANDBOX_KEY")
+# production_key = os.getenv("PRODUCTION_KEY")
+# motive_key = os.getenv("MOTIVE_KEY")
+
+headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
 def getMotiveOdometerValues():
-    odometer_endpoint = f"https://api.gomotive.com/v2/vehicle_locations?page_no=1"
 
+    # Get How many pages contain all of the data
+    odometer_endpoint = f"https://api.gomotive.com/v2/vehicle_locations?page_no=1"
     motive_headers = {
         "accept": "application/json", 
         "X-Api-Key": motive_key
     }
-
     response = requests.get(odometer_endpoint, headers=motive_headers)
 
     pagination = response.json()['pagination']
@@ -33,9 +41,7 @@ def getMotiveOdometerValues():
 
     def get_odometers(page_no):
         odometer_endpoint = f"https://api.gomotive.com/v2/vehicle_locations?page_no={page_no}"
-
         response = requests.get(odometer_endpoint, headers=motive_headers)
-
         return response.json()
 
     odometer_vals = get_odometers(1)
@@ -44,7 +50,6 @@ def getMotiveOdometerValues():
     for i in range(2, pages+1):
         response2 = get_odometers(i)
         for vehicle in response2['vehicles']:
-            
             odometer_vals['vehicles'].append(vehicle)
 
     # turns data into something digestible
@@ -62,7 +67,7 @@ def getMotiveOdometerValues():
 
 # Gets all of the truck ids from fluke
 def getAllTruckAssets():
-    assets_url = 'https://torcroboticssb.us.accelix.com/api/entities/def/Assets/search-paged?includeRelated=true'
+    assets_url = f'https://{tenant}/api/entities/{site}/Assets/search-paged?includeRelated=true'
 
     data = {
         "select": [
@@ -73,7 +78,8 @@ def getAllTruckAssets():
         ],
         "filter": {
             "and": [
-                {"name": "isDeleted", "op": "isfalse"}
+                {"name": "isDeleted", "op": "isfalse"},
+                {"name": "c_assettype", "op": "eq", "value": "Freightliner"}
             ]
         },
         "order": [
@@ -127,10 +133,6 @@ def updateOdometerValues(odometer_data, asset_data):
 
     def getRelatedInfo(asset: dict):
         assetId = asset['id']
-
-        # GETTING TRUCK INFORMATION
-        tenant = "torcroboticssb.us.accelix.com"
-        site = "def"
 
         # Get the related information of the asset for its odometer value
         relatedInfoFluke = f"https://{tenant}/api/entities/{site}/Assets/{assetId}?includeRelated=true" # Include related to get odometer field information
@@ -240,7 +242,7 @@ def updateOdometerValues(odometer_data, asset_data):
         meter_type_id = "6330cf04-5555-44b7-aad8-a843d9e438d1"
 
         payload = {
-            "occurredOn": "2024-02-16T15:24:00",
+            "occurredOn": datetime.now().isoformat(),
             "properties": {
                 "id": truck['id']
             },
