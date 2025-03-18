@@ -61,7 +61,7 @@ def getMotiveOdometerValues():
         if(cursor['current_location'] is not None):
             odometer_readings.append([cursor['number'], cursor['current_location']['odometer'], {"lat": cursor['current_location']['lat'], "lon": cursor['current_location']['lon']}])
         else:
-            print(f"Vehicle {cursor['number']} has no odometer reading")
+            print(f"{cursor['number']} has no odometer reading")
 
     return odometer_readings
 
@@ -316,14 +316,16 @@ def updateOdometerValues(odometer_data, asset_data):
                     # nothing to change on fluke - no new odometer value
                     if not necessaryInfo:
                         continue
-
-                    print(asset['truck_from_motive'] + " has changed")
                     
                     # Has an asset meter that can be updated
                     if(necessaryInfo['hasMeter']):
+                        print(asset['truck_from_motive'] + " moved position")
+
                         addAssetMeterReading(necessaryInfo)
                     # Needs an asset meter created
                     else:
+                        print(asset['truck_from_motive'] + " needs an asset meter")
+
                         UploadingOdometerMeter(necessaryInfo)
 
 if __name__ == "__main__":
