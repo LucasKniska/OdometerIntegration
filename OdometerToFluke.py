@@ -9,7 +9,7 @@ import math
 from zoneinfo import ZoneInfo
 
 
-production = False
+production = True
 
 # config
 tenant = "torcrobotics.us.accelix.com" if production else "torcroboticssb.us.accelix.com"
@@ -262,7 +262,7 @@ def updateOdometerValues(odometer_data, asset_data):
                                 },
                                 "title": "Miles"
                             },        
-                            "description": truck['description'] + " Odometer",
+                            "description": "Odometer",
                             "currentValue": truck["odometerValue"],
                             "tempId": 1
                         },
