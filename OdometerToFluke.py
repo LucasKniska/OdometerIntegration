@@ -16,13 +16,9 @@ tenant = "torcrobotics.us.accelix.com" if production else "torcroboticssb.us.acc
 site = "def"
 
 # Cookie to the sandbox
-sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
-production_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3MiLCJleHAiOjQxMDI0NDQ4MDAsInNpZCI6bnVsbCwiaWlkIjpudWxsfQ.Gh3b3ibvSeYy7YpqDUI9daup86dYjsM_lisS-8ESWDs"
-motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
-
-# sandbox_key = os.getenv("SANDBOX_KEY")
-# production_key = os.getenv("PRODUCTION_KEY")
-# motive_key = os.getenv("MOTIVE_KEY")
+sandbox_key = os.getenv("SANDBOX_KEY")
+production_key = os.getenv("PRODUCTION_KEY")
+motive_key = os.getenv("MOTIVE_KEY")
 
 headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
