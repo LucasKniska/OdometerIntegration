@@ -1,0 +1,28 @@
+name: TerminalZone Update
+
+on:
+  schedule:
+    - cron: '30 9 * * *'   # 4:30 AM EST → 9:30 AM UTC
+    - cron: '30 21 * * *'  # 4:30 PM EST → 9:30 PM UTC
+  workflow_dispatch:       # Optional: manual trigger
+
+jobs:
+  run-update-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run TerminalZoneUpdate script
+        run: python TerminalZoneUpdate.py

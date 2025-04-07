@@ -2,12 +2,7 @@
 import json
 import requests
 import pandas as pd
-from tqdm import tqdm
 import os
-from datetime import datetime
-import math
-from zoneinfo import ZoneInfo
-
 from geopy.distance import distance
 
 # config
@@ -15,8 +10,9 @@ tenant = "torcroboticssb.us.accelix.com"
 site = "def"
 
 # For testing
-sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
-motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
+# Cookie to the sandbox
+sandbox_key = os.getenv("SANDBOX_KEY")
+motive_key = os.getenv("MOTIVE_KEY")
 
 headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
 
@@ -40,10 +36,9 @@ def get_geolocations():
     data = {
         "select": [
             {"name": "c_description"},
-            {"name": "c_assettype"},
             {"name": "id"},
             {"name": "geolocation"},
-            {"name": "c_terminalZone"}
+            {"name": "c_terminalzonedropdown"}
         ],
         "filter": {
             "and": [
@@ -89,6 +84,26 @@ cities = {
     'PDX': (45.5152, -122.6784)
 }
 
+keysToCities = {
+    'BCB': '351680e3-38fc-481a-b2e4-8a3834006c03', 
+    'DFW': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
+    'UPG': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
+    'Uvalde': 'ce169c81-ec66-4389-a3e2-b8382d993138', 
+    'UPCG': 'ea0a16fd-36a5-4286-8103-1cc5871fd099', 
+    'ABQ': '37589044-164f-4de2-b1aa-de4125247156', 
+    '': 'f07a0860-8175-44e1-8364-3043762935dd', 
+    'PDX': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79'
+}
+
+def createTerminalZone(city):
+    return {
+        "entity": "TerminalZone",
+        "id": keysToCities[city],
+        "isDeleted": False,
+        "number": 1,
+        "title": city
+    }
+
 # Function to get nearest city using geopy
 def get_nearest_city(location):
     if location is None:
@@ -106,7 +121,7 @@ def get_nearest_city(location):
 def post_nearest_city(truck):
     url = f'https://{tenant}/api/entities/{site}/Assets/{truck["id"]}'
     data = {
-        "c_terminalZone": truck['nearest_city']
+        "c_terminalzonedropdown": createTerminalZone(truck['nearest_city'])
     }
     response = requests.put(url, headers=headers, data=json.dumps(data))
     
@@ -117,15 +132,20 @@ def post_nearest_city(truck):
     return True
 
 
-if __name__ == "main":
+if __name__ == "__main__":
+    print("Starting TerminalZoneUpdate.py")
 
     trucks = get_geolocations()
 
     # Apply the function to each row
     trucks['nearest_city'] = trucks['geolocation'].apply(get_nearest_city)
 
+    print("\nNearest City - Truck ID")
+
     for i, truck in trucks.iterrows():
 
         if(truck['nearest_city'] is not None):
             post_nearest_city(truck)
             print(str(truck['nearest_city']) + " " + str(truck['id']))
+
+    print("Done")
