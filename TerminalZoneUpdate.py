@@ -14,7 +14,8 @@ site = "def"
 sandbox_key = os.getenv("SANDBOX_KEY")
 motive_key = os.getenv("MOTIVE_KEY")
 
-headers = {'Content-Type': 'application/json', 'Cookie': "JWT-Bearer="+sandbox_key}
+print(sandbox_key)
+headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
 
 
 def get_geolocations():
