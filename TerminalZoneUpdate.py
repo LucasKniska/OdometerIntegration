@@ -11,10 +11,11 @@ site = "def"
 
 # For testing
 # Cookie to the sandbox
-sandbox_key = os.getenv("SANDBOX_KEY")
-motive_key = os.getenv("MOTIVE_KEY")
+# For testing
+sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
+motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 
-headers = {'Content-Type': 'application/json', 'Cookie': "JWT-Bearer="+sandbox_key}
+headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
 
 
 def get_geolocations():
@@ -96,6 +97,7 @@ keysToCities = {
 }
 
 def createTerminalZone(city):
+
     return {
         "entity": "TerminalZone",
         "id": keysToCities[city],
@@ -120,8 +122,11 @@ def get_nearest_city(location):
 # Post the 'nearest_city' field to the associated 'id' for each truck
 def post_nearest_city(truck):
     url = f'https://{tenant}/api/entities/{site}/Assets/{truck["id"]}'
+    
     data = {
-        "c_terminalzonedropdown": createTerminalZone(truck['nearest_city'])
+        "properties": {
+            "c_terminalzonedropdown": createTerminalZone(truck['nearest_city'])
+        },
     }
     response = requests.put(url, headers=headers, data=json.dumps(data))
     
