@@ -5,17 +5,18 @@ import pandas as pd
 import os
 from geopy.distance import distance
 
+production = True
+
 # config
-tenant = "torcroboticssb.us.accelix.com"
+tenant = "torcrobotics.us.accelix.com" if production else "torcroboticssb.us.accelix.com"
 site = "def"
 
-# For testing
 # Cookie to the sandbox
-# For testing
 sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
+production_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3MiLCJleHAiOjQxMDI0NDQ4MDAsInNpZCI6bnVsbCwiaWlkIjpudWxsfQ.Gh3b3ibvSeYy7YpqDUI9daup86dYjsM_lisS-8ESWDs"
 motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 
-headers = {'Content-Type': 'application/json', 'Cookie': sandbox_key}
+headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
 
 def get_geolocations():
@@ -151,6 +152,6 @@ if __name__ == "__main__":
 
         if(truck['nearest_city'] is not None):
             post_nearest_city(truck)
-            print(str(truck['nearest_city']) + " " + str(truck['id']))
+            print(str(truck['c_description']) + ": " + str(truck['nearest_city']) + " " + str(truck['id']))
 
     print("Done")
