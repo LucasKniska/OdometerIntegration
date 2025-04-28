@@ -31,7 +31,6 @@ def get_geolocations():
 
     """
 
-    print("Getting Asset Information")
     # Get the freightliner assets
     url = f'https://{tenant}/api/entities/{site}/Assets/search-paged'
 
@@ -58,7 +57,7 @@ def get_geolocations():
     response = requests.post(url, headers=headers, data=json.dumps(data))
     
     if response.status_code != 200:
-        print("Error getting Freightliners")
+        print("Error getting Freightliners", flush=True)
         return False
     
     response = response.json()
@@ -68,7 +67,7 @@ def get_geolocations():
         data['page'] = page
         response = requests.post(url, headers=headers, data=json.dumps(data))
         if response.status_code != 200:
-            print("Error getting Freightliners")
+            print("Error getting Freightliners", flush=True)
             return False
         dx.extend(response.json()['data'])
 
@@ -114,8 +113,11 @@ def get_nearest_city(location):
     try:
         loc = (location['lat'], location['long'])
     except:
-        print("Could not process: ", location)
-        return None
+        try: 
+            loc = (location['lat'], location['lng'])
+        except:
+            print("Could not process: ", location, flush=True)
+            return None
     
     nearest = min(cities.items(), key=lambda city: distance(loc, city[1]).km)
     return nearest[0]
@@ -132,26 +134,21 @@ def post_nearest_city(truck):
     response = requests.put(url, headers=headers, data=json.dumps(data))
     
     if response.status_code != 200:
-        print(f"Error updating {truck['id']}")
+        print(f"Error updating {truck['id']}", flush=True)
         return False
     
     return True
 
 
 if __name__ == "__main__":
-    print("Starting TerminalZoneUpdate.py")
-
     trucks = get_geolocations()
 
     # Apply the function to each row
     trucks['nearest_city'] = trucks['geolocation'].apply(get_nearest_city)
 
-    print("\nNearest City - Truck ID")
-
     for i, truck in trucks.iterrows():
 
         if(truck['nearest_city'] is not None):
             post_nearest_city(truck)
-            print(str(truck['c_description']) + ": " + str(truck['nearest_city']) + " " + str(truck['id']))
 
-    print("Done")
+    print("Run Complete", flush=True)
