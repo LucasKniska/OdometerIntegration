@@ -19,6 +19,31 @@ motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
 
+# City Constants 
+
+# Define cities and their coordinates
+# (latitude, longitude)
+CITIES = {
+    'ACM': (42.2379, -83.55375),
+    'ABQ': (35.0844, -106.6504),
+    'BCB': (37.2296, -80.4139),
+    'DFW': (32.8998, -97.0403),
+    'UPG': (29.2097, -99.7862),
+    'PDX': (45.5152, -122.6784),
+}
+
+KEYS_TO_CITIES = {
+    'BCB': '351680e3-38fc-481a-b2e4-8a3834006c03', 
+    'DFW': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
+    'UPG': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
+    'ABQ': '37589044-164f-4de2-b1aa-de4125247156', 
+    'PDX': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79',
+    'ACM': 'b709fb0b-c6a8-45ac-a829-ebc73e98ad4d',
+
+    'SCPG': '3838dc87-8d82-4f18-af23-0ae9791b1d1a', 
+}
+
+
 def get_geolocations():
     """
     Gets all of the freightliners and trailer assets from fluke.
@@ -57,7 +82,7 @@ def get_geolocations():
     response = requests.post(url, headers=headers, data=json.dumps(data))
     
     if response.status_code != 200:
-        print("Error getting Freightliners", flush=True)
+        print("Error: getting Freightliners", flush=True)
         return False
     
     response = response.json()
@@ -67,7 +92,7 @@ def get_geolocations():
         data['page'] = page
         response = requests.post(url, headers=headers, data=json.dumps(data))
         if response.status_code != 200:
-            print("Error getting Freightliners", flush=True)
+            print("Error: getting Freightliners", flush=True)
             return False
         dx.extend(response.json()['data'])
 
@@ -76,31 +101,12 @@ def get_geolocations():
 
     return df
 
-# Define cities and their coordinates
-cities = {
-    'ABQ': (35.0844, -106.6504),
-    'BCB': (37.2296, -80.4139),
-    'DFW': (32.8998, -97.0403),
-    'UPG': (29.2097, -99.7862),
-    'PDX': (45.5152, -122.6784)
-}
-
-keysToCities = {
-    'BCB': '351680e3-38fc-481a-b2e4-8a3834006c03', 
-    'DFW': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
-    'UPG': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
-    'Uvalde': 'ce169c81-ec66-4389-a3e2-b8382d993138', 
-    'UPCG': 'ea0a16fd-36a5-4286-8103-1cc5871fd099', 
-    'ABQ': '37589044-164f-4de2-b1aa-de4125247156', 
-    '': 'f07a0860-8175-44e1-8364-3043762935dd', 
-    'PDX': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79'
-}
 
 def createTerminalZone(city):
 
     return {
         "entity": "TerminalZone",
-        "id": keysToCities[city],
+        "id": KEYS_TO_CITIES[city],
         "isDeleted": False,
         "number": 1,
         "title": city
@@ -116,10 +122,10 @@ def get_nearest_city(location):
         try: 
             loc = (location['lat'], location['lng'])
         except:
-            print("Could not process: ", location, flush=True)
+            print("Error: Could not process: ", location, flush=True)
             return None
     
-    nearest = min(cities.items(), key=lambda city: distance(loc, city[1]).km)
+    nearest = min(CITIES.items(), key=lambda city: distance(loc, city[1]).km)
     return nearest[0]
 
 # Post the 'nearest_city' field to the associated 'id' for each truck
@@ -134,7 +140,7 @@ def post_nearest_city(truck):
     response = requests.put(url, headers=headers, data=json.dumps(data))
     
     if response.status_code != 200:
-        print(f"Error updating {truck['id']}", flush=True)
+        print(f"Error: updating {truck['id']}", flush=True)
         return False
     
     return True
