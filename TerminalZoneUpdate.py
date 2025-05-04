@@ -24,23 +24,22 @@ headers = {'Content-Type': 'application/json', 'Cookie': production_key if produ
 # Define cities and their coordinates
 # (latitude, longitude)
 CITIES = {
-    'ACM': (42.2379, -83.55375),
-    'ABQ': (35.0844, -106.6504),
-    'BCB': (37.2296, -80.4139),
-    'DFW': (32.8998, -97.0403),
-    'UPG': (29.2097, -99.7862),
-    'PDX': (45.5152, -122.6784),
+    'ACM (American Center for Mobilities, MI)': (42.2379, -83.55375),
+    'BCB (Blacksburg, VA)': (37.2296, -80.4139),
+    'DFW (Dallas, TX)': (32.8998, -97.0403),
+    'UPG (Uvalde Proving Grounds, TX)': (29.2097, -99.7862),
+    'PDX (Portland, OR)': (45.5152, -122.6784),
 }
 
 KEYS_TO_CITIES = {
-    'BCB': '351680e3-38fc-481a-b2e4-8a3834006c03', 
-    'DFW': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
-    'UPG': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
-    'ABQ': '37589044-164f-4de2-b1aa-de4125247156', 
-    'PDX': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79',
-    'ACM': 'b709fb0b-c6a8-45ac-a829-ebc73e98ad4d',
-
-    'SCPG': '3838dc87-8d82-4f18-af23-0ae9791b1d1a', 
+    'BCB (Blacksburg, VA)': '351680e3-38fc-481a-b2e4-8a3834006c03',
+    'MTL (Montreal, CN)': '2a900522-59bc-4518-ab7a-3f9af8fd5762',
+    'AUS (Austin, TX)': 'c5057cf9-7df8-436e-afd3-a243818a6b9b',
+    'MPG (Michellin Proving Grounds, SC)': '08203d31-a3b8-4252-9d6e-acb512f0e246',
+    'ACM (American Center for Mobilities, MI)': 'b709fb0b-c6a8-45ac-a829-ebc73e98ad4d',
+    'DFW (Dallas, TX)': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
+    'UPG (Uvalde Proving Grounds, TX)': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
+    'PDX (Portland, OR)': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79',
 }
 
 
