@@ -16,9 +16,9 @@ tenant = "torcrobotics.us.accelix.com" if production else "torcroboticssb.us.acc
 site = "def"
 
 # Cookie to the sandbox
-sandbox_key = os.getenv("SANDBOX_KEY")
-production_key = os.getenv("PRODUCTION_KEY")
-motive_key = os.getenv("MOTIVE_KEY")
+sandbox_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3NTQiIsImV4cCI6NDEwMjQ0NDgwMCwic2lkIjpudWxsLCJpaWQiOm51bGx9.94frut80sKx43Cm4YKfVbel8upAQ8glWdfYIN3tMF7A"
+production_key = "JWT-Bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI5NWZkYzZhYS0wOWNiLTQ0NzMtYTIxZC1kNzBiZTE2NWExODMiLCJ0aWQiOiJUb3JjUm9ib3RpY3MiLCJleHAiOjQxMDI0NDQ4MDAsInNpZCI6bnVsbCwiaWlkIjpudWxsfQ.Gh3b3ibvSeYy7YpqDUI9daup86dYjsM_lisS-8ESWDs"
+motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 
 headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
@@ -57,8 +57,7 @@ def getMotiveOdometerValues():
         if(cursor['current_location'] is not None):
             odometer_readings.append([cursor['number'], cursor['current_location']['odometer'], {"lat": cursor['current_location']['lat'], "lon": cursor['current_location']['lon']}])
         else:
-            print(f"{cursor['number']} has no odometer reading")
-
+            continue
     return odometer_readings
 
 # Gets all of the truck ids from fluke
@@ -92,8 +91,6 @@ def getAllTruckAssets():
     response = response.json()
     dx = response['data']
     pages = response['totalPages']
-
-    print("Getting all freightliner ids")
 
     for page in range(1, pages):
         data['page'] = page
@@ -140,7 +137,6 @@ def updateOdometerValues(odometer_data, asset_data):
             # Make sure the odometer has moved
             currentOdometerValue = response['related']['AssetMeters'][0]['properties']['currentValue']
             if currentOdometerValue == asset['odometer_value']:
-                print(asset['truck_from_motive'] + " has not updated position.")
                 return
 
 
@@ -154,8 +150,6 @@ def updateOdometerValues(odometer_data, asset_data):
                 'hasMeter': True
             }
             
-            print(response['properties']['c_description'] + ": Ready to go")
-
             return necessary_info
 
         # Does not have an asset meter
@@ -167,8 +161,6 @@ def updateOdometerValues(odometer_data, asset_data):
                 'positionValue': asset['position'],
                 'hasMeter': False
             }
-
-            print(response['properties']['c_description'] + ": No meter")
 
             return necessary_info
 
@@ -185,20 +177,15 @@ def updateOdometerValues(odometer_data, asset_data):
             "related": {},
             "deleted": False
         }
-
-        print(payload)
         
         response = requests.post(url=assetMeterReadings, headers=headers, data=json.dumps(payload))
 
         try: 
             # Check response
-            if response.status_code == 200 or response.status_code == 201:
-                print(truck['description'] + ": Asset Meter updated successfully!")
-                print(response.json())
-            else:
-                print(f"Failed. Status code: {response.status_code}")
-                print("Error:", response.text)
-                print(response)
+            if response.status_code != 200 and response.status_code != 201:
+                print("Error Uploading New Odometer Reading:", response.text["error"], flush=True)
+                print("Payload: ", payload, flush=True)
+                
         except Exception as e:
             pass
 
@@ -215,19 +202,13 @@ def updateOdometerValues(odometer_data, asset_data):
             }
         }
 
-        print(payload)
-
         response = requests.put(url=updateTruckLocation, headers=headers, data=json.dumps(payload))
 
         try: 
             # Check response
-            if response.status_code == 200:
-                print(truck['description'] + ": Location updated successfully!")
-                print(response.json())
-            else:
-                print(f"Failed. Status code: {response.status_code}")
-                print("Error:", response.text)
-                print(response)
+            if response.status_code != 200:
+                print("Error: ", response.text, flush=True)
+                print("Payload: ", payload, flush=True)
         except Exception as e:
             pass
 
@@ -273,19 +254,15 @@ def updateOdometerValues(odometer_data, asset_data):
             "deleted": False
         }
 
-        print(payload)
-
         response_for_adding = requests.put(fluke, headers=headers, data=json.dumps(payload))
 
         try: 
-            if response_for_adding.status_code == 200 or response_for_adding.status_code == 201:
-                print(f"{truck['description']}: Odometer added successfully!")
-            else:
-                print(f"Failed. Status code: {response_for_adding.status_code}")
-                print("Error:", response_for_adding.text)
-                print(response_for_adding)
+            if response_for_adding.status_code != 200 and response_for_adding.status_code != 201:
+                print("Error:", response_for_adding.text, flush=True)
+                print("Payload: ", payload, flush=True)
         except Exception:
-            print("Failed to upload truck")
+            print("Error:", response_for_adding.text, flush=True)
+            print("Payload: ", payload, flush=True)
 
     # Iterate through the odometer data and match with asset dictionary
     for adding_info in odometer_data:
@@ -315,13 +292,9 @@ def updateOdometerValues(odometer_data, asset_data):
                     
                     # Has an asset meter that can be updated
                     if(necessaryInfo['hasMeter']):
-                        print(asset['truck_from_motive'] + " moved position")
-
                         addAssetMeterReading(necessaryInfo)
                     # Needs an asset meter created
                     else:
-                        print(asset['truck_from_motive'] + " needs an asset meter")
-
                         UploadingOdometerMeter(necessaryInfo)
 
 if __name__ == "__main__":
@@ -336,3 +309,5 @@ if __name__ == "__main__":
     # update the truck meter information
     # create truck asset meter if needed
     inserted_odometers = updateOdometerValues(motiveOdometers, trucks)
+
+    print("Run Complete", flush=True)
