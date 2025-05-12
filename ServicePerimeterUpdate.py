@@ -19,34 +19,6 @@ motive_key = "9e90504a-82f0-4ed4-b54c-ce37f388f211"
 headers = {'Content-Type': 'application/json', 'Cookie': production_key if production else sandbox_key}
 
 
-# City Constants 
-
-# Define cities and their coordinates
-# (latitude, longitude)
-CITIES = {
-    'ACM (American Center for Mobilities, MI)': (42.2381, -83.5537),
-    'BCB (Blacksburg, VA)': (37.1897, -80.3921),
-    'DFW (Dallas, TX)': (32.9669, -97.2983),
-    'UPG (Uvalde Proving Grounds, TX)': (29.1125, -99.7521),
-    'PDX (Portland, OR)': (45.5152, -122.6784), 
-    'AUS (Austin, TX)': (30.0667, -97.8357),
-    'MPG (Michellin Proving Grounds, SC)': (34.3925, -82.0291),
-    'ARB (Ann Arbor, MI)': (42.3057, -83.6842) # Need full name of this one   
-}
-
-KEYS_TO_CITIES = {
-    'ACM (American Center for Mobilities, MI)': 'b709fb0b-c6a8-45ac-a829-ebc73e98ad4d',
-    'BCB (Blacksburg, VA)': '351680e3-38fc-481a-b2e4-8a3834006c03',
-    'DFW (Dallas, TX)': '9056cfa3-701d-46ed-8aec-37d2b642d2b4', 
-    'UPG (Uvalde Proving Grounds, TX)': '8eb92cad-6a68-4dc1-ae6e-58ced7eb34e0', 
-    'PDX (Portland, OR)': '83e7a2ec-da8d-4f9c-8a45-a3580bd1ac79',
-    'MTL (Montreal, CN)': '2a900522-59bc-4518-ab7a-3f9af8fd5762',
-    'AUS (Austin, TX)': 'c5057cf9-7df8-436e-afd3-a243818a6b9b',
-    'MPG (Michellin Proving Grounds, SC)': '08203d31-a3b8-4252-9d6e-acb512f0e246',
-    'ARB (Ann Arbor, MI)': 'f0d0e7ac-511e-4ae7-a960-7c411eb6c917', # Need full name of this one
-}
-
-
 def get_geolocations():
     """
     Gets all of the freightliners and trailer assets from fluke.
@@ -67,7 +39,7 @@ def get_geolocations():
             {"name": "c_description"},
             {"name": "id"},
             {"name": "geolocation"},
-            {"name": "c_terminalzonedropdown"}
+            {"name": "c_serviceperimeter"}
         ],
         "filter": {
             "and": [
@@ -104,50 +76,67 @@ def get_geolocations():
 
     return df
 
+# Define cities and their coordinates
+CITIES = {
+    'PDX (Portland, OR)': (45.5152, -122.6784), 
+    'MTL (Montreal, CN)': (45.4636, -73.6177), 
+    'MPG (Michellin Proving Grounds, SC)': (34.3925, -82.0291),
+    'ACM (American Center for Mobilities, MI)': (42.2381, -83.5537),
+    'UPG (Uvalde Proving Grounds, TX)': (29.1125, -99.7521),
+    'BCB (Blacksburg, VA)': (37.1897, -80.3921),
+    'DFW (Dallas, TX)': (32.9669, -97.2983),
+    'AUS (Austin, TX)': (30.0667, -97.8357),
+    'ARB (Ann Arbor, MI)': (42.3057, -83.6842) # Need full name of this one   
+}
 
-def createTerminalZone(city):
+KEYS_TO_CITIES = {
+    'PDX (Portland, OR)': '90d55c73-1cfb-48a2-942f-d49edab539bd',
+    'MTL (Montreal, CN)': 'c3d8de75-d3ee-46b1-b5ba-06f9de164a4e',
+    'MPG (Michellin Proving Grounds, SC)': 'c71c2cc2-201c-4ab5-ba47-1863f4b288fa',
+    'ACM (American Center for Mobilities, MI)': 'cc385a67-48bc-4cda-aeb8-9a16c7b0f623',
+    'UPG (Uvalde Proving Grounds, TX)': '1bd9fded-1eea-4712-92a8-b9b80a6a4aa0',
+    'BCB (Blacksburg, VA)': '8bf9e772-1235-4146-8dde-cc4efd0aff5d',
+    'DFW (Dallas, TX)': '9bc84368-8830-48b9-a1c6-214823c30308',
+    'AUS (Austin, TX)': '7fdb0a74-124f-43e1-9605-d764cb774c61',
+    'ARB (Ann Arbor, MI)': '0a9c6d50-88d9-41a1-9787-5d6df3db0519',
+}
 
+def createServicePerimeter(city):
     return {
-        "entity": "TerminalZone",
-        "id": KEYS_TO_CITIES[city],
+        "entity": "ServicePerimeter",
+        "id": KEYS_TO_CITIES[city], # Set this to a constnat id to see if it works for a specific truck
         "isDeleted": False,
         "number": 1,
         "title": city
     }
 
 # Function to get nearest city using geopy
-def get_nearest_city(location):
+def getNearestCity(location):
     if location is None:
         return None
     try:
         loc = (location['lat'], location['long'])
     except:
-        try: 
-            loc = (location['lat'], location['lng'])
-        except:
-            print("Error: Could not process: ", location, flush=True)
-            return None
+        print("Error: Could not process: ", location, flush=True)
+        return None
     
     nearest = min(CITIES.items(), key=lambda city: distance(loc, city[1]).km)
     return nearest[0]
 
 # Post the 'nearest_city' field to the associated 'id' for each truck
-def post_nearest_city(truck):
-    
-    ############################# USED FOR TESTING ON C19
-    truck["id"] = '6b741a62-a59d-4fbe-89d9-f4996bbb5170'
-
+def postNearestCity(truck):
     url = f'https://{tenant}/api/entities/{site}/Assets/{truck["id"]}'
     
     data = {
         "properties": {
-            "c_terminalzonedropdown": createTerminalZone(truck['nearest_city'])
+            "c_serviceperimeter": createServicePerimeter(truck['nearest_city'])
         },
     }
     response = requests.put(url, headers=headers, data=json.dumps(data))
     
     if response.status_code != 200:
-        print(f"Error: updating {truck['id']}", flush=True)
+        print(f"Error updating {truck['id']}", flush=True)
+        print(response.json())
         return False
     
     return True
@@ -157,11 +146,12 @@ if __name__ == "__main__":
     trucks = get_geolocations()
 
     # Apply the function to each row
-    trucks['nearest_city'] = trucks['geolocation'].apply(get_nearest_city)
+    trucks['nearest_city'] = trucks['geolocation'].apply(getNearestCity)
 
     for i, truck in trucks.iterrows():
 
         if(truck['nearest_city'] is not None):
-            post_nearest_city(truck)
+            print("Truck: ", truck['c_description'], "Nearest City: ", truck['nearest_city'], flush=True)
+            postNearestCity(truck)
 
     print("Run Complete", flush=True)
